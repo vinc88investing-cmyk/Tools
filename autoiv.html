@@ -8,12 +8,14 @@
     body {
       margin: 0;
       font-family: Arial, sans-serif;
+      overflow: hidden; /* Prevents double scrollbars with the iframe */
     }
 
+    /* Fixed Home Button Styling */
     .home-button {
       position: fixed;
-      top: 10px;
-      left: 10px;
+      top: 15px;
+      left: 15px;
       z-index: 1000;
       background-color: #007bff;
       color: white;
@@ -23,20 +25,48 @@
       cursor: pointer;
       text-decoration: none;
       font-size: 14px;
+      font-weight: bold;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+      transition: background-color 0.2s ease;
     }
 
     .home-button:hover {
       background-color: #0056b3;
     }
 
+    /* Watermark Styling */
+    .watermark {
+      position: fixed;
+      bottom: 15px;
+      right: 15px;
+      z-index: 1000;
+      background-color: rgba(0, 0, 0, 0.6); /* Semi-transparent black background */
+      color: rgba(255, 255, 255, 0.8); /* Slightly transparent white text */
+      padding: 6px 12px;
+      border-radius: 4px;
+      font-size: 12px;
+      pointer-events: none; /* Allows clicks to pass through if needed */
+      letter-spacing: 0.5px;
+    }
+
     iframe {
       width: 100%;
       height: 100vh;
       border: none;
+      display: block;
     }
   </style>
 </head>
 <body>
+
+  <!-- Blue Home Button -->
+  <a href="https://vinc88investing-cmyk.github.io/Tools/" class="home-button">Home</a>
+
+  <!-- Watermark -->
+  <div class="watermark">YT: @Vinc88</div>
+
+  <!-- Embedded Application -->
   <iframe src="https://owners-earning-auto.lovable.app"></iframe>
+
 </body>
 </html>
