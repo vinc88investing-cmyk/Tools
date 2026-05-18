@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Modern Compound Interest Calculator</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    :root {
+      /* Changed from purple-ish indigo to true blue */
+      --primary: #007bff; 
+      --secondary: #0056b3; 
+      --accent: #3399ff; 
+      --light: #f8f9fa;
+      --dark: #212529;
+      --success: #4cc9f0;
+      --shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      --transition: all 0.3s ease;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: #f5f7ff;
+      color: var(--dark);
+      line-height: 1.6;
+      padding: 20px;
+    }
+    
+    /* Fixed Home Button Styling */
+    .home-button {
+      position: fixed;
+      top: 15px;
+      left: 15px;
+      z-index: 1000;
+      background-color: var(--primary);
+      color: white;
+      border: none;
+      padding: 10px 15px;
+      border-radius: 6px;
+      cursor: pointer;
+      text-decoration: none;
+      font-size: 14px;
+      font-weight: bold;
+      box-shadow: var(--shadow);
+      transition: var(--transition);
+    }
+    .home-button:hover {
+      background-color: var(--secondary);
+    }
+
+    /* Watermark Styling */
+    .watermark {
+      position: fixed;
+      bottom: 15px;
+      right: 15px;
+      z-index: 1000;
+      background-color: rgba(0, 0, 0, 0.6);
+      color: rgba(255, 255, 255, 0.8);
+      padding: 6px 12px;
+      border-radius: 4px;
+      font-size: 12px;
+      pointer-events: none;
+      letter-spacing: 0.5px;
+    }
+
+    .container { max-width: 1000px; margin: 0 auto; padding: 20px; }
+    header { text-align: center; margin-bottom: 30px; animation: fadeIn 1s ease; }
+    h1 { color: var(--primary); font-size: 2.5rem; margin-bottom: 10px; }
+    .subtitle { color: #6c757d; font-size: 1.1rem; }
+    .calculator-container {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-bottom: 30px;
+    }
+    @media (max-width: 768px) {
+      .calculator-container { grid-template-columns: 1fr; }
+    }
+    .calculator {
+      background: white; border-radius: 15px; padding: 30px; box-shadow: var(--shadow);
+      transition: var(--transition); animation: slideUp 0.8s ease;
+    }
+    .calculator:hover {
+      box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1); transform: translateY(-5px);
+    }
+    .form-group { margin-bottom: 20px; }
+    label { display: block; margin-bottom: 8px; font-weight: 600; color: var(--dark); }
+    input {
+      width: 100%; padding: 12px 15px; border: 2px solid #e9ecef;
+      border-radius: 8px; font-size: 1rem; transition: var(--transition);
+    }
+    input:focus {
+      border-color: var(--accent); outline: none;
+      box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.2);
+    }
+    .input-with-icon { position: relative; }
+    .input-with-icon span {
+      position: absolute; left: 15px; top: 50%; transform: translateY(-50%);
+      color: #6c757d;
+    }
+    .input-with-icon input { padding-left: 40px; }
+    button {
+      background-color: var(--primary); color: white; border: none;
+      padding: 14px; border-radius: 8px; cursor: pointer;
+      font-size: 1rem; font-weight: 600; width: 100%;
+      transition: var(--transition); margin-top: 10px;
+    }
+    button:hover {
+      background-color: var(--secondary); transform: translateY(-2px);
+    }
+    .results {
+      background: white; border-radius: 15px; padding: 30px;
+      box-shadow: var(--shadow); animation: fadeIn 1s ease; margin-bottom: 30px;
+    }
+    .results h2 {
+      color: var(--primary); margin-bottom: 20px; border-bottom: 2px solid #e9ecef;
+      padding-bottom: 10px;
+    }
+    .result-grid {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 20px; margin-bottom: 30px;
+    }
+    .result-card {
+      background: #f8f9fa; border-radius: 10px; padding: 20px; text-align: center;
+      transition: var(--transition);
+    }
+    .result-card:hover {
+      transform: translateY(-5px); box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    }
+    .result-card h3 { color: #6c757d; font-size: 1rem; margin-bottom: 10px; }
+    .result-value { font-size: 1.8rem; font-weight: 700; color: var(--primary); }
+    .chart-container { height: 400px; margin-top: 30px; animation: fadeIn 1.2s ease; }
+    table {
+      width: 100%; border-collapse: collapse; margin-top: 30px; animation: fadeIn 1s ease;
+    }
+    th, td {
+      padding: 12px 15px; text-align: left; border-bottom: 1px solid #e9ecef;
+    }
+    th { background-color: #f8f9fa; font-weight: 600; color: var(--dark); }
+    tr:hover { background-color: #f8f9fa; }
+    .positive { color: #2ecc71; }
+    
+    /* Disclaimer Styling */
+    .disclaimer {
+      text-align: center;
+      font-size: 0.85rem;
+      color: #6c757d;
+      margin-top: 40px;
+      padding-top: 20px;
+      border-top: 1px solid #e9ecef;
+      animation: fadeIn 1s ease;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; } to { opacity: 1; }
+    }
+    @keyframes slideUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Blue Home Button -->
+  <a href="https://vinc88investing-cmyk.github.io/Tools/" class="home-button">Home</a>
+
+  <!-- Watermark -->
+  <div class="watermark">Youtube: @Vinc88</div>
+
+  <div class="container">
+    <header>
+      <h1>Compound Interest Calculator</h1>
+      <p class="subtitle">Watch your money grow with the power of compounding</p>
+    </header>
+    <div class="calculator-container">
+      <div class="calculator">
+        <div class="form-group">
+          <label for="principal">Initial Investment</label>
+          <div class="input-with-icon">
+            <span>$</span>
+            <input type="number" id="principal" min="0" step="100" placeholder="Enter amount"/>
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="rate">Annual Interest Rate</label>
+          <div class="input-with-icon">
+            <span>%</span>
+            <input type="number" id="rate" min="0" step="0.1" placeholder="Enter rate"/>
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="years">Investment Period (years)</label>
+          <input type="number" id="years" min="1" step="1" placeholder="Years"/>
+        </div>
+        <div class="form-group">
+          <label for="contribution">Annual Contribution (optional)</label>
+          <div class="input-with-icon">
+            <span>$</span>
+            <input type="number" id="contribution" min="0" step="100" placeholder="Enter amount"/>
+          </div>
+        </div>
+        <button onclick="calculate()">Calculate Growth</button>
+      </div>
+      <div class="calculator">
+        <h3>How compounding works</h3>
+        <p>Compound interest is the addition of interest to the principal sum, so that interest earns interest.</p>
+        <div style="margin-top: 20px;">
+          <h4>Key Factors:</h4>
+          <ul style="margin-left: 20px; margin-top: 10px;">
+            <li>Initial investment amount</li>
+            <li>Annual interest rate</li>
+            <li>Time (years invested)</li>
+            <li>Regular contributions (optional)</li>
+          </ul>
+        </div>
+        <div style="margin-top: 20px;">
+          <h4>Tips:</h4>
+          <ul style="margin-left: 20px; margin-top: 10px;">
+            <li>Start early to maximize time</li>
+            <li>Higher rates dramatically increase growth</li>
+            <li>Even small regular contributions add up</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    <div id="results" class="results" style="display: none;">
+      <h2>Your Investment Growth</h2>
+      <div class="result-grid">
+        <div class="result-card"><h3>Initial Investment</h3><div class="result-value" id="result-principal"></div></div>
+        <div class="result-card"><h3>Total Contributions</h3><div class="result-value" id="result-contributions"></div></div>
+        <div class="result-card"><h3>Interest Earned</h3><div class="result-value positive" id="result-interest"></div></div>
+        <div class="result-card"><h3>Final Balance</h3><div class="result-value positive" id="result-total"></div></div>
+      </div>
+      <div class="chart-container"><canvas id="growthChart"></canvas></div>
+      <h3>Year-by-Year Growth</h3>
+      <table>
+        <thead>
+          <tr><th>Year</th><th>Starting</th><th>Contributions</th><th>Interest</th><th>Ending Balance</th></tr>
+        </thead>
+        <tbody id="yearly-results"></tbody>
+      </table>
+    </div>
+
+    <!-- Disclaimer added at the bottom of the content container -->
+    <div class="disclaimer">
+      Disclaimer: This tool is for educational purposes only. It does not constitute financial advice.
+    </div>
+
+  </div>
+  <script>
+    let growthChart;
+    function calculate() {
+      const principal = parseFloat(document.getElementById('principal').value);
+      const rate = parseFloat(document.getElementById('rate').value) / 100;
+      const years = parseInt(document.getElementById('years').value);
+      const contribution = parseFloat(document.getElementById('contribution').value) || 0;
+      if (isNaN(principal) || isNaN(rate) || isNaN(years)) {
+        alert("Please fill in all required fields: Initial Investment, Interest Rate, and Years.");
+        return;
+      }
+      let currentBalance = principal;
+      let totalContributions = principal;
+      let totalInterest = 0;
+      let yearlyData = [], chartLabels = [], chartPrincipal = [], chartInterest = [];
+      for (let year = 1; year <= years; year++) {
+        if (year > 1 && contribution > 0) {
+          currentBalance += contribution;
+          totalContributions += contribution;
+        }
+        const yearlyInterest = currentBalance * rate;
+        currentBalance += yearlyInterest;
+        totalInterest += yearlyInterest;
+        yearlyData.push({
+          year, starting: year === 1 ? principal : yearlyData[yearlyData.length - 1].ending,
+          contributions: (year > 1 && contribution > 0 ? contribution : 0),
+          interest: yearlyInterest, ending: currentBalance
+        });
+        chartLabels.push(`Year ${year}`);
+        chartPrincipal.push(Math.round(totalContributions));
+        chartInterest.push(Math.round(totalInterest));
+      }
+      currentBalance = currentBalance;
+      
+      
+      document.getElementById('result-principal').textContent = formatCurrency(principal);
+      document.getElementById('result-contributions').textContent = formatCurrency(totalContributions - principal);
+      document.getElementById('result-interest').textContent = formatCurrency(totalInterest);
+      document.getElementById('result-total').textContent = formatCurrency(currentBalance);
+      const yearlyResults = document.getElementById('yearly-results');
+      yearlyResults.innerHTML = '';
+      yearlyData.forEach(data => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+          <td>${data.year}</td>
+          <td>${formatCurrency(data.starting)}</td>
+          <td>${formatCurrency(data.contributions)}</td>
+          <td class="positive">${formatCurrency(data.interest)}</td>
+          <td>${formatCurrency(data.ending)}</td>`;
+        yearlyResults.appendChild(row);
+      });
+      createChart(chartLabels, chartPrincipal, chartInterest, currentBalance);
+      document.getElementById('results').style.display = 'block';
+    }
+    function formatCurrency(value) {
+      return '$' + Math.round(value).toLocaleString();
+    }
+    function createChart(labels, principalData, interestData, finalBalance) {
+      const ctx = document.getElementById('growthChart').getContext('2d');
+      if (growthChart) growthChart.destroy();
+      growthChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels, datasets: [
+            /* Updated chart colors to match the new true blue */
+            { label: 'Total Contributions', data: principalData, backgroundColor: '#007bff', borderColor: '#0056b3', borderWidth: 1 },
+            { label: 'Interest Earned', data: interestData, backgroundColor: '#4cc9f0', borderColor: '#3399ff', borderWidth: 1 }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            x: { stacked: true, grid: { display: false } },
+            y: {
+              stacked: true,
+              ticks: { callback: value => '$' + value.toLocaleString() }
+            }
+          },
+          plugins: {
+            tooltip: {
+              callbacks: {
+                label: context => {
+                  let label = context.dataset.label || '';
+                  if (label) label += ': ';
+                  if (context.parsed.y !== null)
+                    label += '$' + context.parsed.y.toLocaleString();
+                  return label;
+                }
+              }
+            },
+            legend: { position: 'top' },
+            title: {
+              display: true,
+              text: 'Investment Growth Over Time',
+              font: { size: 16 }
+            }
+          },
+          animation: { duration: 2000, easing: 'easeOutQuart' }
+        }
+      });
+    }
+  </script>
+</body>
+</html>
