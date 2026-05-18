@@ -1,1 +1,230 @@
-coming soon
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stock Quality Checklist</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;850&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0b0f19;
+        }
+    </style>
+</head>
+<body class="text-slate-200 min-h-screen flex flex-col justify-between">
+
+    <!-- Small Header -->
+    <header class="py-6 px-4 max-w-lg mx-auto w-full flex items-center justify-between">
+        <div class="flex items-center gap-2">
+            <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+            <span class="text-xs font-bold tracking-widest uppercase text-slate-400">Stock Checklist</span>
+        </div>
+        <button id="quick-reset" onclick="resetAnalyzer()" class="hidden text-xs text-slate-500 hover:text-slate-300 transition-colors">
+            Start Over
+        </button>
+    </header>
+
+    <!-- Main Card -->
+    <main class="flex-grow flex items-center justify-center p-4">
+        <div class="max-w-md w-full bg-slate-900 border border-slate-800 rounded-3xl p-8 shadow-2xl space-y-8">
+            
+            <!-- Step Indicators -->
+            <div id="steps-indicator" class="hidden flex justify-center gap-2">
+                <span class="dot w-2.5 h-2.5 rounded-full bg-slate-800"></span>
+                <span class="dot w-2.5 h-2.5 rounded-full bg-slate-800"></span>
+                <span class="dot w-2.5 h-2.5 rounded-full bg-slate-800"></span>
+                <span class="dot w-2.5 h-2.5 rounded-full bg-slate-800"></span>
+                <span class="dot w-2.5 h-2.5 rounded-full bg-slate-800"></span>
+            </div>
+
+            <!-- Ticker Entry Screen -->
+            <div id="screen-ticker" class="space-y-6">
+                <div class="text-center space-y-2">
+                    <h2 class="text-2xl font-black text-white">Stock Checklist</h2>
+                    <p class="text-xs text-slate-400">Enter a ticker to start the 5-step test.</p>
+                </div>
+                
+                <div class="space-y-4">
+                    <input type="text" id="input-ticker" placeholder="e.g. AAPL" class="w-full bg-slate-950 border border-slate-800 rounded-2xl px-4 py-4 text-center text-xl font-bold text-white placeholder-slate-800 uppercase focus:outline-none focus:border-emerald-500 transition-colors">
+                    
+                    <button onclick="startAnalysis()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-4 px-4 rounded-2xl text-xs uppercase tracking-wider transition-all">
+                        Begin Checklist
+                    </button>
+                </div>
+            </div>
+
+            <!-- Question Screen -->
+            <div id="screen-questions" class="hidden space-y-8">
+                <div class="text-center space-y-4">
+                    <span id="active-ticker" class="inline-block text-xs px-3 py-1 bg-slate-950 border border-slate-800 rounded-full text-emerald-400 font-bold uppercase tracking-widest">AAPL</span>
+                    <h3 id="question-text" class="text-2xl font-bold text-white tracking-tight leading-snug">S&P 500 Top 150?</h3>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <button onclick="handleAnswer(true)" class="flex items-center justify-center py-6 bg-slate-950 hover:bg-emerald-950/20 border border-slate-800 hover:border-emerald-500/30 rounded-2xl transition-all">
+                        <span class="text-lg font-bold text-slate-400 hover:text-emerald-400">YES</span>
+                    </button>
+                    
+                    <button onclick="handleAnswer(false)" class="flex items-center justify-center py-6 bg-slate-950 hover:bg-rose-950/20 border border-slate-800 hover:border-rose-500/30 rounded-2xl transition-all">
+                        <span class="text-lg font-bold text-slate-400 hover:text-rose-400">NO</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Results Screen -->
+            <div id="screen-summary" class="hidden space-y-6">
+                <div class="text-center space-y-2">
+                    <h2 class="text-xl font-black text-white" id="summary-ticker">AAPL Analysis</h2>
+                    <p class="text-xs text-slate-400">Final Score Card</p>
+                </div>
+
+                <div id="summary-card" class="p-8 rounded-2xl text-center space-y-2">
+                    <div class="text-6xl font-black tracking-tight" id="score-text">0/5</div>
+                    <div class="text-xs font-bold tracking-widest uppercase" id="verdict-label">NOT INVESTABLE</div>
+                </div>
+
+                <div id="breakdown-list" class="divide-y divide-slate-800/50 text-xs">
+                    <!-- Summary items load here dynamically -->
+                </div>
+
+                <button onclick="resetAnalyzer()" class="w-full bg-slate-950 hover:bg-slate-900 border border-slate-800 text-slate-300 font-bold py-4 rounded-2xl text-xs uppercase tracking-wider transition-colors">
+                    Check Another Stock
+                </button>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- Tiny Footer -->
+    <footer class="py-6 text-center text-slate-600 text-[10px] space-y-1 px-4">
+        <p>Simple 5-Step Evaluation Framework</p>
+        <p class="text-slate-500 max-w-xs mx-auto">Disclaimer: For educational purposes only. This tool does not provide financial or investment advice.</p>
+    </footer>
+
+    <script>
+        const questions = [
+            "S&P 500 Top 150?",
+            "Wide Economic Moat?",
+            "Great Financials, Increasing Earnings and Revenue? Double Digit EPS for next 5Y?",
+            "Undervalued? Margin of Safety?",
+            "Great Charts? Uptrend? Oversold?"
+        ];
+
+        let currentStep = 0;
+        let ticker = "";
+        let answers = [];
+
+        const screenTicker = document.getElementById("screen-ticker");
+        const screenQuestions = document.getElementById("screen-questions");
+        const screenSummary = document.getElementById("screen-summary");
+        const stepsIndicator = document.getElementById("steps-indicator");
+        const quickReset = document.getElementById("quick-reset");
+        const inputTicker = document.getElementById("input-ticker");
+        const activeTicker = document.getElementById("active-ticker");
+        const questionText = document.getElementById("question-text");
+        const summaryTicker = document.getElementById("summary-ticker");
+        const scoreText = document.getElementById("score-text");
+        const verdictLabel = document.getElementById("verdict-label");
+        const summaryCard = document.getElementById("summary-card");
+        const breakdownList = document.getElementById("breakdown-list");
+        const dots = document.querySelectorAll(".dot");
+
+        function startAnalysis() {
+            const val = inputTicker.value.trim().toUpperCase();
+            if (!val) {
+                inputTicker.focus();
+                return;
+            }
+            ticker = val;
+            currentStep = 1;
+            answers = [];
+            
+            screenTicker.classList.add("hidden");
+            screenQuestions.classList.remove("hidden");
+            stepsIndicator.classList.remove("hidden");
+            quickReset.classList.remove("hidden");
+
+            updateUI();
+        }
+
+        function updateUI() {
+            // Update question card text
+            questionText.innerText = questions[currentStep - 1];
+            activeTicker.innerText = ticker;
+
+            // Highlight status dots
+            dots.forEach((dot, index) => {
+                if (index < currentStep - 1) {
+                    dot.className = "dot w-2.5 h-2.5 rounded-full bg-emerald-500";
+                } else if (index === currentStep - 1) {
+                    dot.className = "dot w-2.5 h-2.5 rounded-full bg-slate-200";
+                } else {
+                    dot.className = "dot w-2.5 h-2.5 rounded-full bg-slate-800";
+                }
+            });
+        }
+
+        function handleAnswer(ans) {
+            answers.push(ans);
+            if (currentStep < 5) {
+                currentStep++;
+                updateUI();
+            } else {
+                showSummary();
+            }
+        }
+
+        function showSummary() {
+            screenQuestions.classList.add("hidden");
+            stepsIndicator.classList.add("hidden");
+            screenSummary.classList.remove("hidden");
+
+            const yesCount = answers.filter(a => a === true).length;
+            summaryTicker.innerText = `${ticker} Results`;
+            scoreText.innerText = `${yesCount}/5`;
+
+            if (yesCount >= 4) {
+                summaryCard.className = "p-8 rounded-2xl text-center space-y-2 bg-emerald-950/20 border border-emerald-500/20";
+                verdictLabel.innerText = "INVESTABLE NOW";
+                verdictLabel.className = "text-xs font-bold tracking-widest text-emerald-400 uppercase";
+            } else {
+                summaryCard.className = "p-8 rounded-2xl text-center space-y-2 bg-slate-950 border border-slate-850";
+                verdictLabel.innerText = "NOT INVESTABLE";
+                verdictLabel.className = "text-xs font-bold tracking-widest text-slate-500 uppercase";
+            }
+
+            // Print the clean, simple breakdown
+            breakdownList.innerHTML = "";
+            questions.forEach((q, idx) => {
+                const item = document.createElement("div");
+                item.className = "py-3 flex justify-between";
+                const isYes = answers[idx];
+                item.innerHTML = `
+                    <span class="text-slate-400">${q}</span>
+                    <span class="${isYes ? 'text-emerald-400 font-bold' : 'text-slate-600'}">${isYes ? 'YES' : 'NO'}</span>
+                `;
+                breakdownList.appendChild(item);
+            });
+        }
+
+        function resetAnalyzer() {
+            currentStep = 0;
+            ticker = "";
+            answers = [];
+            inputTicker.value = "";
+            
+            screenTicker.classList.remove("hidden");
+            screenQuestions.classList.add("hidden");
+            screenSummary.classList.add("hidden");
+            stepsIndicator.classList.add("hidden");
+            quickReset.classList.add("hidden");
+        }
+    </script>
+</body>
+</html>
