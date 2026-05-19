@@ -347,3 +347,257 @@
 
 </body>
 </html>
+
+<style>
+  /* 
+   * Pincode Overlay Styles
+   * These styles are scoped to avoid interfering with the main site as much as possible.
+   * It uses a fixed overlay to cover the entire screen until the correct pin is entered.
+   */
+  #pincode-overlay-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: rgba(243, 244, 246, 0.95); /* Tailwind gray-100 with opacity */
+    backdrop-filter: blur(8px);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 999999; /* Ensure it's on top of everything */
+    font-family: system-ui, -apple-system, sans-serif;
+    transition: opacity 0.3s ease-out, visibility 0.3s ease-out;
+  }
+
+  /* When the class 'unlocked' is added, fade out the overlay */
+  #pincode-overlay-container.unlocked {
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+  }
+
+  #pincode-box {
+    background-color: white;
+    padding: 2.5rem;
+    border-radius: 1rem;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+    text-align: center;
+    max-width: 400px;
+    width: 90%;
+  }
+
+  #pincode-box h2 {
+    margin-top: 0;
+    color: #111827; /* Tailwind gray-900 */
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+  }
+
+  #pincode-box p {
+    color: #4b5563; /* Tailwind gray-600 */
+    margin-bottom: 1.5rem;
+    font-size: 0.95rem;
+  }
+
+  .pin-inputs {
+    display: flex;
+    justify-content: center;
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .pin-input {
+    width: 3rem;
+    height: 3.5rem;
+    font-size: 1.5rem;
+    text-align: center;
+    border: 2px solid #d1d5db; /* Tailwind gray-300 */
+    border-radius: 0.5rem;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    background-color: #f9fafb; /* Tailwind gray-50 */
+    color: #1f2937;
+  }
+
+  .pin-input:focus {
+    border-color: #3b82f6; /* Tailwind blue-500 */
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+    background-color: white;
+  }
+
+  /* Style for invalid input state */
+  .pin-input.error {
+    border-color: #ef4444; /* Tailwind red-500 */
+    animation: shake 0.4s ease-in-out;
+  }
+
+  #pin-error-msg {
+    color: #ef4444; /* Tailwind red-500 */
+    font-size: 0.875rem;
+    min-height: 1.25rem; /* Reserve space so layout doesn't jump */
+    margin-bottom: 1rem;
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
+
+  #pin-error-msg.visible {
+    opacity: 1;
+  }
+
+  /* Keyframes for a subtle shake effect on error */
+  @keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-5px); }
+    75% { transform: translateX(5px); }
+  }
+
+</style>
+
+<!-- 
+  Place this entire block at the very bottom of your <body> tag, 
+  just before the closing </body> 
+-->
+<div id="pincode-overlay-container">
+  <div id="pincode-box">
+    <h2>Access Restricted</h2>
+    <p>Please enter the 4-digit PIN to view this site.</p>
+    
+    <div class="pin-inputs" id="pin-inputs-container">
+      <!-- Input fields restrict to numeric, 1 character max -->
+      <input type="text" class="pin-input" maxlength="1" inputmode="numeric" pattern="[0-9]*" aria-label="Pin digit 1">
+      <input type="text" class="pin-input" maxlength="1" inputmode="numeric" pattern="[0-9]*" aria-label="Pin digit 2">
+      <input type="text" class="pin-input" maxlength="1" inputmode="numeric" pattern="[0-9]*" aria-label="Pin digit 3">
+      <input type="text" class="pin-input" maxlength="1" inputmode="numeric" pattern="[0-9]*" aria-label="Pin digit 4">
+      <input type="text" class="pin-input" maxlength="1" inputmode="numeric" pattern="[0-9]*" aria-label="Pin digit 5">
+    </div>
+
+    <div id="pin-error-msg">Incorrect PIN. Please try again.</div>
+  </div>
+</div>
+
+<script>
+  (function() {
+    // === CONFIGURATION ===
+    // Change this to your desired 5-digit PIN
+    const CORRECT_PIN = "57821"; 
+    
+    // Check if the user has already unlocked the site in this session
+    // If you want it to lock every single page load, remove this sessionStorage logic
+    if (sessionStorage.getItem('siteUnlocked') === 'true') {
+      document.getElementById('pincode-overlay-container').style.display = 'none';
+      return; // Exit script if already unlocked
+    }
+
+    // === DOM ELEMENTS ===
+    const overlay = document.getElementById('pincode-overlay-container');
+    const inputs = Array.from(document.querySelectorAll('.pin-input'));
+    const errorMsg = document.getElementById('pin-error-msg');
+
+    // Focus the first input on load
+    setTimeout(() => {
+        if(inputs[0]) inputs[0].focus();
+    }, 100);
+
+    // === EVENT LISTENERS ===
+    inputs.forEach((input, index) => {
+      
+      // Handle input events (typing)
+      input.addEventListener('input', (e) => {
+        // Only allow numbers
+        input.value = input.value.replace(/[^0-9]/g, '');
+
+        if (input.value) {
+          // Clear error state when typing
+          clearError();
+          
+          // Move to next input if there is one
+          if (index < inputs.length - 1) {
+            inputs[index + 1].focus();
+          } else {
+            // If it's the last input and has a value, check the PIN
+            checkPin();
+          }
+        }
+      });
+
+      // Handle keydown for backspace and navigation
+      input.addEventListener('keydown', (e) => {
+        if (e.key === 'Backspace') {
+          // If input is empty and not the first one, move focus back
+          if (!input.value && index > 0) {
+            inputs[index - 1].focus();
+            // Optional: clear the previous input when going back
+            // inputs[index - 1].value = ''; 
+          }
+          // Clear current input value
+          input.value = '';
+          clearError();
+        } else if (e.key === 'ArrowLeft' && index > 0) {
+           inputs[index - 1].focus();
+        } else if (e.key === 'ArrowRight' && index < inputs.length - 1) {
+           inputs[index + 1].focus();
+        } else if (e.key === 'Enter') {
+            checkPin();
+        }
+      });
+      
+      // Select text on focus for easier overwriting
+      input.addEventListener('focus', () => {
+          input.select();
+      });
+    });
+
+    // === FUNCTIONS ===
+    function checkPin() {
+      // Gather the values from all inputs
+      const enteredPin = inputs.map(input => input.value).join('');
+      
+      // Only check if all 5 digits are filled
+      if (enteredPin.length === 5) {
+        if (enteredPin === CORRECT_PIN) {
+          // Success!
+          unlockSite();
+        } else {
+          // Failure
+          showError();
+        }
+      }
+    }
+
+    function unlockSite() {
+      // Add unlocked class to trigger CSS fade out
+      overlay.classList.add('unlocked');
+      
+      // Optional: Store in sessionStorage so it doesn't prompt again on refresh
+      // (will reset when browser tab closes)
+      sessionStorage.setItem('siteUnlocked', 'true');
+      
+      // Blur inputs so keyboard hides on mobile
+      inputs.forEach(input => input.blur());
+    }
+
+    function showError() {
+      errorMsg.classList.add('visible');
+      
+      // Add error class to inputs for styling (red border, shake)
+      inputs.forEach(input => {
+        input.classList.add('error');
+        input.value = ''; // Clear inputs on error
+      });
+      
+      // Remove error class after animation completes so it can shake again
+      setTimeout(() => {
+        inputs.forEach(input => input.classList.remove('error'));
+        // Focus first input to try again
+        inputs[0].focus();
+      }, 500); 
+    }
+
+    function clearError() {
+      errorMsg.classList.remove('visible');
+      inputs.forEach(input => input.classList.remove('error'));
+    }
+  })();
+</script>
