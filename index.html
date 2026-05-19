@@ -348,6 +348,9 @@
 </body>
 </html>
 
+
+
+
 <style>
   /* 
    * Pincode Overlay Styles
@@ -462,7 +465,7 @@
 <div id="pincode-overlay-container">
   <div id="pincode-box">
     <h2>Access Restricted</h2>
-    <p>Please enter the 4-digit PIN to view this site.</p>
+    <p>Please enter the 6-digit PIN to view this site.</p>
     
     <div class="pin-inputs" id="pin-inputs-container">
       <!-- Input fields restrict to numeric, 1 character max -->
@@ -471,6 +474,7 @@
       <input type="text" class="pin-input" maxlength="1" inputmode="numeric" pattern="[0-9]*" aria-label="Pin digit 3">
       <input type="text" class="pin-input" maxlength="1" inputmode="numeric" pattern="[0-9]*" aria-label="Pin digit 4">
       <input type="text" class="pin-input" maxlength="1" inputmode="numeric" pattern="[0-9]*" aria-label="Pin digit 5">
+      <input type="text" class="pin-input" maxlength="1" inputmode="numeric" pattern="[0-9]*" aria-label="Pin digit 6">
     </div>
 
     <div id="pin-error-msg">Incorrect PIN. Please try again.</div>
@@ -480,8 +484,8 @@
 <script>
   (function() {
     // === CONFIGURATION ===
-    // Change this to your desired 5-digit PIN
-    const CORRECT_PIN = "57821"; 
+    // Change this to your desired 6-digit PIN
+    const CORRECT_PIN = "578214"; 
     
     // Check if the user has already unlocked the site in this session
     // If you want it to lock every single page load, remove this sessionStorage logic
@@ -554,8 +558,8 @@
       // Gather the values from all inputs
       const enteredPin = inputs.map(input => input.value).join('');
       
-      // Only check if all 5 digits are filled
-      if (enteredPin.length === 5) {
+      // Only check if all 6 digits are filled
+      if (enteredPin.length === 6) {
         if (enteredPin === CORRECT_PIN) {
           // Success!
           unlockSite();
