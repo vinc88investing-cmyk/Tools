@@ -21,7 +21,7 @@
   <meta name="twitter:description" content="Use owner’s earnings and long-term cash flow projections to calculate a stock’s intrinsic value – just like Warren Buffett.">
 
   <!-- Favicon (optional) -->
-  <link rel="icon" href="/favicon.ico" type="image/x-icon">
+  <link class="favicon" rel="icon" href="/favicon.ico" type="image/x-icon">
 </head>
 
 <!DOCTYPE html>
@@ -147,7 +147,7 @@
         padding: 0.2rem !important; /* Further reduced table cell padding */
       }
 
-      button, .header-button-group a { /* Hide both buttons when printing */
+      button, .header-button-group a, .home-button { /* Hide buttons when printing */
         display: none !important;
       }
       .messageBox {
@@ -232,8 +232,16 @@
 </head>
 <body class="font-sans antialiased bg-background text-text p-4 md:p-8">
   <div class="container max-w-4xl mx-auto bg-card rounded-xl shadow-xl overflow-hidden">
-    <header class="bg-primary text-white p-6 md:p-8 rounded-t-xl flex justify-between items-center">
-      <h1 class="text-2xl md:text-3xl font-semibold">Intrinsic Value Calculator</h1>
+    <header class="bg-primary text-white p-6 md:p-8 rounded-t-xl flex justify-between items-center relative">
+      <div class="flex items-center gap-4">
+        <!-- Home Button -->
+        <a href="https://vinc88investing-cmyk.github.io/Tools/" class="home-button bg-white text-primary hover:bg-gray-100 hover:text-secondary p-2 rounded-lg shadow-md transition-all duration-200 flex items-center justify-center w-10 h-10" title="Go to Tools Page">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-6 h-6">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25" />
+          </svg>
+        </a>
+        <h1 class="text-2xl md:text-3xl font-semibold">Intrinsic Value Calculator</h1>
+      </div>
       <div class="header-button-group flex gap-3">
         <div class="relative inline-block">
             <button type="button" class="info-button bg-white text-primary text-xl w-8 h-8 rounded-lg font-medium shadow-md hover:bg-gray-100 hover:shadow-lg transition-all duration-200 flex items-center justify-center" onclick="toggleExplanation('warrenBuffettExplanation', event)">
