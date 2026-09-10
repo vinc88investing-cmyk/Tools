@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Investment Simulation Tool</title>
+    <!-- Load Tailwind CSS for modern, responsive styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Load D3.js for robust, scalable data visualization -->
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <!-- Load Inter Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6; /* Tailwind gray-100 */
+        }
+        
+        /* Custom styled range sliders for a premium feel */
+        input[type=range] {
+            -webkit-appearance: none;
+            width: 100%;
+            background: transparent;
+            margin: 8px 0;
+        }
+        input[type=range]:focus {
+            outline: none;
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 6px;
+            cursor: pointer;
+            border-radius: 999px;
+            background: var(--track-bg, #e5e7eb); /* Updated dynamically via JS */
+        }
+        input[type=range]::-webkit-slider-thumb {
+            height: 22px;
+            width: 22px;
+            border-radius: 50%;
+            background: #ffffff;
+            border: 3px solid #3b82f6; /* Tailwind blue-500 */
+            cursor: pointer;
+            -webkit-appearance: none;
+            margin-top: -8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.15);
+            transition: transform 0.1s ease;
+        }
+        input[type=range]::-webkit-slider-thumb:hover {
+            transform: scale(1.1);
+        }
+        input[type=range]::-moz-range-track {
+            width: 100%;
+            height: 6px;
+            cursor: pointer;
+            border-radius: 999px;
+            background: var(--track-bg, #e5e7eb);
+        }
+        input[type=range]::-moz-range-thumb {
+            height: 22px;
+            width: 22px;
+            border-radius: 50%;
+            background: #ffffff;
+            border: 3px solid #3b82f6;
+            cursor: pointer;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.15);
+        }
+        
+        /* Tooltip styling */
+        #chart-tooltip {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.95);
+            border: 1px solid #e5e7eb;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            border-radius: 8px;
+            padding: 12px;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.2s ease;
+            z-index: 10;
+            backdrop-filter: blur(4px);
+        }
+    </style>
+</head>
+<body class="p-4 md:p-8 flex items-center justify-center min-h-screen text-gray-800">
+
+    <div class="max-w-5xl w-full bg-white rounded-3xl shadow-xl overflow-hidden border border-gray-100">
+        
+        <!-- Header -->
+        <div class="px-6 py-5 sm:px-8 sm:py-6 bg-gray-50 border-b border-gray-200 flex flex-col md:flex-row items-center justify-between gap-4">
+            <div class="flex items-center gap-3 text-2xl font-bold text-gray-900">
+                <input type="text" id="tickerInput" value="" placeholder="TICKER" class="w-[6rem] px-2 py-1 text-center bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 uppercase shadow-sm transition-all text-blue-600" maxlength="5">
+                <span>Investment Simulation</span>
+            </div>
+            <div class="text-sm font-medium text-gray-500 flex items-center gap-4">
+                <div class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.5)]"></span> Projected Portfolio</div>
+                <div class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-full border-2 border-emerald-500 border-dashed"></span> Total Invested</div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 p-6 sm:p-8 border-b border-gray-100">
+            <!-- Initial Principal -->
+            <div class="bg-gray-50 rounded-2xl p-4 sm:p-5 flex flex-col items-center justify-center text-center border border-gray-100">
+                <span class="text-sm font-medium text-gray-500 mb-1">Initial Principal</span>
+                <span id="sumInitial" class="text-xl sm:text-2xl font-bold text-gray-900">$0</span>
+            </div>
+            <!-- Total Contributions -->
+            <div class="bg-gray-50 rounded-2xl p-4 sm:p-5 flex flex-col items-center justify-center text-center border border-gray-100">
+                <span class="text-sm font-medium text-gray-500 mb-1">Total Contributions</span>
+                <span id="sumContributions" class="text-xl sm:text-2xl font-bold text-gray-900">$0</span>
+            </div>
+            <!-- Interest Earned -->
+            <div class="bg-emerald-50 rounded-2xl p-4 sm:p-5 flex flex-col items-center justify-center text-center border border-emerald-100">
+                <span class="text-sm font-medium text-emerald-700 mb-1">Est. Interest Earned</span>
+                <span id="sumInterest" class="text-xl sm:text-2xl font-bold text-emerald-600">$0</span>
+            </div>
+            <!-- Projected Ending Balance -->
+            <div class="bg-blue-50 rounded-2xl p-4 sm:p-5 flex flex-col items-center justify-center text-center border border-blue-100 shadow-sm relative overflow-hidden">
+                <div class="absolute top-0 right-0 w-16 h-16 bg-blue-500 rounded-full blur-3xl opacity-20 transform translate-x-1/2 -translate-y-1/2"></div>
+                <span class="text-sm font-semibold text-blue-700 mb-1">Projected Balance</span>
+                <span id="sumTotal" class="text-2xl sm:text-3xl font-extrabold text-blue-700 tracking-tight">$0</span>
+            </div>
+        </div>
+
+        <div class="px-4 sm:px-8 py-6 relative">
+            <div id="chart-container" class="w-full h-[300px] sm:h-[400px]"></div>
+            <div id="chart-tooltip"></div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-8 p-6 sm:p-8 bg-gray-50 border-t border-gray-200 rounded-b-3xl">
+            
+            <!-- Slider: Initial Investment -->
+            <div>
+                <div class="flex justify-between items-center mb-3">
+                    <label class="text-sm font-semibold text-gray-700">Initial Investment</label>
+                    <div class="relative w-28">
+                        <span class="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 font-medium">$</span>
+                        <input type="text" id="txtInitial" class="w-full pl-7 pr-3 py-1.5 bg-white border border-gray-300 rounded-lg text-right font-semibold text-gray-900 focus:ring-2 focus:ring-blue-500 outline-none shadow-sm transition" data-type="currency">
+                    </div>
+                </div>
+                <input type="range" id="sldInitial" min="500" max="100000" step="500" value="10000">
+            </div>
+
+            <!-- Slider: Monthly Contribution -->
+            <div>
+                <div class="flex justify-between items-center mb-3">
+                    <label class="text-sm font-semibold text-gray-700">Monthly Contribution</label>
+                    <div class="relative w-28">
+                        <span class="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 font-medium">$</span>
+                        <input type="text" id="txtMonthly" class="w-full pl-7 pr-3 py-1.5 bg-white border border-gray-300 rounded-lg text-right font-semibold text-gray-900 focus:ring-2 focus:ring-blue-500 outline-none shadow-sm transition" data-type="currency">
+                    </div>
+                </div>
+                <input type="range" id="sldMonthly" min="0" max="5000" step="50" value="250">
+            </div>
+
+            <!-- Slider: Expected Annual Growth -->
+            <div>
+                <div class="flex justify-between items-center mb-3">
+                    <label class="text-sm font-semibold text-gray-700">Expected Annual Growth</label>
+                    <div class="relative w-24">
+                        <input type="text" id="txtRate" class="w-full pr-7 pl-3 py-1.5 bg-white border border-gray-300 rounded-lg text-right font-semibold text-gray-900 focus:ring-2 focus:ring-blue-500 outline-none shadow-sm transition" data-type="percent">
+                        <span class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 font-medium">%</span>
+                    </div>
+                </div>
+                <input type="range" id="sldRate" min="0" max="30" step="0.5" value="10">
+            </div>
+
+            <!-- Slider: Investment Horizon -->
+            <div>
+                <div class="flex justify-between items-center mb-3">
+                    <label class="text-sm font-semibold text-gray-700">Investment Horizon</label>
+                    <div class="relative w-24">
+                        <input type="text" id="txtYears" class="w-full pr-8 pl-3 py-1.5 bg-white border border-gray-300 rounded-lg text-right font-semibold text-gray-900 focus:ring-2 focus:ring-blue-500 outline-none shadow-sm transition" data-type="years">
+                        <span class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 text-xs font-medium uppercase mt-0.5">Yrs</span>
+                    </div>
+                </div>
+                <input type="range" id="sldYears" min="1" max="30" step="1" value="10">
+            </div>
+            
+        </div>
+    </div>
+
+    <script>
+        // --- State Management ---
+        const state = {
+            initial: 10000,
+            monthly: 250,
+            rate: 10,
+            years: 10
+        };
+
+        // DOM Elements
+        const inputs = [
+            { id: 'Initial', key: 'initial', sld: document.getElementById('sldInitial'), txt: document.getElementById('txtInitial') },
+            { id: 'Monthly', key: 'monthly', sld: document.getElementById('sldMonthly'), txt: document.getElementById('txtMonthly') },
+            { id: 'Rate', key: 'rate', sld: document.getElementById('sldRate'), txt: document.getElementById('txtRate') },
+            { id: 'Years', key: 'years', sld: document.getElementById('sldYears'), txt: document.getElementById('txtYears') }
+        ];
+
+        const summaries = {
+            initial: document.getElementById('sumInitial'),
+            contributions: document.getElementById('sumContributions'),
+            interest: document.getElementById('sumInterest'),
+            total: document.getElementById('sumTotal')
+        };
+
+        const tickerInput = document.getElementById('tickerInput');
+        let chartData = [];
+
+        // --- Formatting Helpers ---
+        const formatCurrency = (val) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(val);
+        const formatNumber = (val) => new Intl.NumberFormat('en-US', { maximumFractionDigits: 1 }).format(val);
+        
+        // --- Core Math Calculation ---
+        function calculateGrowth() {
+            chartData = [];
+            const { initial, monthly, rate, years } = state;
+            const r = rate / 100 / 12; // monthly rate
+            
+            for (let t = 0; t <= years; t++) {
+                const months = t * 12;
+                let total = 0;
+                let contributions = initial + (monthly * months);
+                
+                if (r === 0) {
+                    total = contributions;
+                } else {
+                    // Compound interest formula with regular monthly deposits
+                    total = initial * Math.pow(1 + r, months) + monthly * ((Math.pow(1 + r, months) - 1) / r);
+                }
+                
+                chartData.push({
+                    year: t,
+                    total: Math.max(0, total),
+                    contributions: Math.max(0, contributions),
+                    interest: Math.max(0, total - contributions)
+                });
+            }
+            updateSummaries();
+            drawChart();
+        }
+
+        function updateSummaries() {
+            const finalData = chartData[chartData.length - 1];
+            summaries.initial.textContent = formatCurrency(state.initial);
+            
+            // Just the contributions added over time (not including initial)
+            const addedContributions = state.monthly * 12 * state.years;
+            summaries.contributions.textContent = formatCurrency(addedContributions);
+            
+            summaries.interest.textContent = formatCurrency(finalData.interest);
+            summaries.total.textContent = formatCurrency(finalData.total);
+        }
+
+        // --- UI Synchronization ---
+        function updateSliderTrack(slider) {
+            const min = parseFloat(slider.min) || 0;
+            const max = parseFloat(slider.max) || 100;
+            const val = parseFloat(slider.value) || 0;
+            const pct = ((val - min) / (max - min)) * 100;
+            slider.style.setProperty('--track-bg', `linear-gradient(to right, #3b82f6 ${pct}%, #e5e7eb ${pct}%)`);
+        }
+
+        function syncInputs(source, config) {
+            let val = parseFloat(source.value.replace(/[^0-9.-]/g, ''));
+            if (isNaN(val)) val = config.sld.min;
+            
+            // Clamp values
+            const max = parseFloat(config.sld.max);
+            const min = parseFloat(config.sld.min);
+            if (val > max) val = max;
+            if (val < min) val = min;
+
+            // Update State
+            state[config.key] = val;
+            
+            // Update Elements
+            config.sld.value = val;
+            updateSliderTrack(config.sld);
+
+            if (source === config.sld) {
+                // If sliding, format text field cleanly
+                config.txt.value = formatNumber(val);
+            } else {
+                // If typing, format it on blur/enter (handled via events)
+                config.txt.value = formatNumber(val);
+            }
+
+            calculateGrowth();
+        }
+
+        // Setup Event Listeners
+        inputs.forEach(config => {
+            // Setup initial track styles
+            updateSliderTrack(config.sld);
+            config.txt.value = formatNumber(state[config.key]);
+
+            // Range slider changes
+            config.sld.addEventListener('input', () => syncInputs(config.sld, config));
+            
+            // Text box changes
+            config.txt.addEventListener('blur', () => syncInputs(config.txt, config));
+            config.txt.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    config.txt.blur();
+                }
+            });
+            // Select all on focus for easier typing
+            config.txt.addEventListener('focus', () => config.txt.select());
+        });
+
+        // Ticker specific auto-resize width (cosmetic)
+        tickerInput.addEventListener('input', function() {
+            this.style.width = Math.max(4, this.value.length + 1) + 'ch';
+        });
+
+        function drawChart() {
+            const container = d3.select("#chart-container");
+            container.selectAll("*").remove(); 
+
+            const containerNode = container.node();
+            const width = containerNode.getBoundingClientRect().width;
+            const height = containerNode.getBoundingClientRect().height;
+            
+            const isMobile = width < 600;
+            const margin = { 
+                top: 20, 
+                right: isMobile ? 15 : 20, 
+                bottom: 30, 
+                left: isMobile ? 55 : 75 
+            };
+            const innerWidth = width - margin.left - margin.right;
+            const innerHeight = height - margin.top - margin.bottom;
+
+            const svg = container.append("svg")
+                .attr("width", width)
+                .attr("height", height)
+                .style("overflow", "visible");
+
+            const g = svg.append("g")
+                .attr("transform", `translate(${margin.left},${margin.top})`);
+
+            // Scales
+            const x = d3.scaleLinear()
+                .domain(d3.extent(chartData, d => d.year))
+                .range([0, innerWidth]);
+
+            const yMax = d3.max(chartData, d => d.total);
+            const y = d3.scaleLinear()
+                .domain([0, yMax > 0 ? yMax * 1.05 : 100]) // 5% headroom
+                .range([innerHeight, 0]);
+
+            // Gridlines
+            g.append("g")
+                .attr("class", "grid")
+                .attr("transform", `translate(0,${innerHeight})`)
+                .call(d3.axisBottom(x)
+                    .ticks(isMobile ? 5 : 10)
+                    .tickSize(-innerHeight)
+                    .tickFormat("")
+                )
+                .call(gAxis => gAxis.select(".domain").remove())
+                .selectAll(".tick line")
+                .attr("stroke", "#e5e7eb")
+                .attr("stroke-dasharray", "2,2");
+
+            g.append("g")
+                .attr("class", "grid")
+                .call(d3.axisLeft(y)
+                    .ticks(5)
+                    .tickSize(-innerWidth)
+                    .tickFormat("")
+                )
+                .call(gAxis => gAxis.select(".domain").remove())
+                .selectAll(".tick line")
+                .attr("stroke", "#e5e7eb")
+                .attr("stroke-dasharray", "2,2");
+
+            // Gradient definition for area fill
+            const defs = svg.append("defs");
+            const gradient = defs.append("linearGradient")
+                .attr("id", "area-gradient")
+                .attr("x1", "0%").attr("y1", "0%")
+                .attr("x2", "0%").attr("y2", "100%");
+            gradient.append("stop").attr("offset", "0%").attr("stop-color", "#3b82f6").attr("stop-opacity", 0.4);
+            gradient.append("stop").attr("offset", "100%").attr("stop-color", "#3b82f6").attr("stop-opacity", 0.0);
+
+            // Area path (Total)
+            const area = d3.area()
+                .x(d => x(d.year))
+                .y0(innerHeight)
+                .y1(d => y(d.total))
+                .curve(d3.curveMonotoneX);
+
+            g.append("path")
+                .datum(chartData)
+                .attr("fill", "url(#area-gradient)")
+                .attr("d", area);
+
+            // Line path (Total)
+            const lineTotal = d3.line()
+                .x(d => x(d.year))
+                .y(d => y(d.total))
+                .curve(d3.curveMonotoneX);
+
+            g.append("path")
+                .datum(chartData)
+                .attr("fill", "none")
+                .attr("stroke", "#3b82f6")
+                .attr("stroke-width", 3)
+                .attr("stroke-linecap", "round")
+                .attr("d", lineTotal);
+
+            // Line path (Contributions)
+            const lineContrib = d3.line()
+                .x(d => x(d.year))
+                .y(d => y(d.contributions))
+                .curve(d3.curveMonotoneX);
+
+            g.append("path")
+                .datum(chartData)
+                .attr("fill", "none")
+                .attr("stroke", "#10b981") // emerald-500
+                .attr("stroke-width", 2)
+                .attr("stroke-dasharray", "5,5")
+                .attr("stroke-linecap", "round")
+                .attr("d", lineContrib);
+
+            // Axes formatting
+            g.append("g")
+                .attr("transform", `translate(0,${innerHeight})`)
+                .call(d3.axisBottom(x)
+                    .ticks(isMobile ? Math.min(chartData.length, 5) : Math.min(chartData.length, 10))
+                    .tickFormat(d => `Year ${d}`)
+                )
+                .attr("font-size", isMobile ? "10px" : "12px")
+                .attr("font-family", "Inter")
+                .attr("color", "#6b7280")
+                .call(gAxis => gAxis.select(".domain").remove());
+
+            g.append("g")
+                .call(d3.axisLeft(y)
+                    .ticks(6)
+                    .tickFormat(d => {
+                        if(d >= 1000000) return '$' + parseFloat((d/1000000).toFixed(1)) + 'M';
+                        if(d >= 1000) return '$' + parseFloat((d/1000).toFixed(1)) + 'k';
+                        return '$' + d;
+                    })
+                )
+                .attr("font-size", isMobile ? "10px" : "12px")
+                .attr("font-family", "Inter")
+                .attr("color", "#6b7280")
+                .call(gAxis => gAxis.select(".domain").remove());
+
+            
+            // Hover interactions
+            const tooltip = d3.select("#chart-tooltip");
+            const hoverLine = g.append("line")
+                .attr("class", "hover-line")
+                .attr("y1", 0)
+                .attr("y2", innerHeight)
+                .attr("stroke", "#9ca3af")
+                .attr("stroke-width", 1)
+                .attr("stroke-dasharray", "4,4")
+                .style("opacity", 0);
+
+            const hoverDotTotal = g.append("circle")
+                .attr("r", 5)
+                .attr("fill", "#3b82f6")
+                .attr("stroke", "#ffffff")
+                .attr("stroke-width", 2)
+                .style("opacity", 0)
+                .style("pointer-events", "none");
+                
+            const hoverDotContrib = g.append("circle")
+                .attr("r", 4)
+                .attr("fill", "#10b981")
+                .attr("stroke", "#ffffff")
+                .attr("stroke-width", 2)
+                .style("opacity", 0)
+                .style("pointer-events", "none");
+
+            // Invisible rect to capture mouse events over the chart area
+            g.append("rect")
+                .attr("width", innerWidth)
+                .attr("height", innerHeight)
+                .attr("fill", "transparent")
+                .on("mousemove", function(event) {
+                    const mouseX = d3.pointer(event)[0];
+                    const yearInvert = Math.round(x.invert(mouseX));
+                    
+                    // Clamp year to data bounds
+                    const year = Math.max(0, Math.min(state.years, yearInvert));
+                    const d = chartData.find(item => item.year === year);
+                    
+                    if(!d) return;
+
+                    const cx = x(year);
+                    const cyTotal = y(d.total);
+                    const cyContrib = y(d.contributions);
+
+                    hoverLine
+                        .attr("x1", cx)
+                        .attr("x2", cx)
+                        .style("opacity", 1);
+
+                    hoverDotTotal
+                        .attr("cx", cx)
+                        .attr("cy", cyTotal)
+                        .style("opacity", 1);
+                        
+                    hoverDotContrib
+                        .attr("cx", cx)
+                        .attr("cy", cyContrib)
+                        .style("opacity", 1);
+
+                    // Setup Tooltip Content
+                    const html = `
+                        <div class="font-bold text-gray-800 mb-2 pb-2 border-b border-gray-100">Year ${d.year}</div>
+                        <div class="flex items-center justify-between gap-4 mb-1 text-sm">
+                            <div class="flex items-center gap-2"><span class="w-2.5 h-2.5 rounded-full bg-blue-500"></span><span class="text-gray-600">Total Value</span></div>
+                            <span class="font-bold text-gray-900">${formatCurrency(d.total)}</span>
+                        </div>
+                        <div class="flex items-center justify-between gap-4 mb-1 text-sm">
+                            <div class="flex items-center gap-2"><span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span><span class="text-gray-600">Invested</span></div>
+                            <span class="font-medium text-gray-700">${formatCurrency(d.contributions)}</span>
+                        </div>
+                        <div class="flex items-center justify-between gap-4 text-sm mt-1 pt-1 border-t border-gray-100">
+                            <span class="text-gray-500 pl-4 text-xs">Interest</span>
+                            <span class="font-medium text-emerald-600 text-xs">+${formatCurrency(d.interest)}</span>
+                        </div>
+                    `;
+                    
+                    // Position Tooltip dynamically
+                    tooltip.html(html);
+                    
+                    // Get node dimensions
+                    const ttNode = tooltip.node();
+                    const tw = ttNode.offsetWidth;
+                    const th = ttNode.offsetHeight;
+                    
+                    // Calculate absolute positions relative to body/viewport
+                    let left = event.pageX + 15;
+                    let top = event.pageY - (th / 2);
+                    
+                    // Keep tooltip on screen
+                    if (left + tw > window.innerWidth - 10) left = event.pageX - tw - 15;
+                    
+                    tooltip
+                        .style("left", left + "px")
+                        .style("top", top + "px")
+                        .style("opacity", 1);
+                })
+                .on("mouseout", function() {
+                    hoverLine.style("opacity", 0);
+                    hoverDotTotal.style("opacity", 0);
+                    hoverDotContrib.style("opacity", 0);
+                    tooltip.style("opacity", 0);
+                });
+        }
+
+        // Initialize Calculation and Render
+        calculateGrowth();
+
+        // Ensure chart is responsive to window resize
+        let resizeTimer;
+        window.addEventListener('resize', () => {
+            clearTimeout(resizeTimer);
+            resizeTimer = setTimeout(() => {
+                drawChart();
+            }, 150); // Debounce resize events
+        });
+
+    </script>
+</body>
+</html>
